@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Gradle: jakarta.servlet:jakarta.servlet-api:4.0.3">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/jakarta.servlet/jakarta.servlet-api/4.0.3/7c810f7bca93d109bac3323286b8e5ec6c394e12/jakarta.servlet-api-4.0.3.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/jakarta.servlet/jakarta.servlet-api/4.0.3/e9d245a3171cbbfee13207df0f288035b1b25709/jakarta.servlet-api-4.0.3-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

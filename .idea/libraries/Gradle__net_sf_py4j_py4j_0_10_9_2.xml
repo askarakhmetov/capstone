@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Gradle: net.sf.py4j:py4j:0.10.9.2">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/net.sf.py4j/py4j/0.10.9.2/64a1fda4291ab97f697034459ce70aa6a2fce659/py4j-0.10.9.2.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/net.sf.py4j/py4j/0.10.9.2/e52a30eb4ef4d42b7ef7879314bd360eba67a48d/py4j-0.10.9.2-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

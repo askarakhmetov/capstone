@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Gradle: org.codehaus.janino:commons-compiler:3.0.16">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.codehaus.janino/commons-compiler/3.0.16/13006f927c8383e85bea59c401de7ef3d7fa741/commons-compiler-3.0.16.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.codehaus.janino/commons-compiler/3.0.16/3764e8b8d5ec37687d4ee95543b2355e70ac6974/commons-compiler-3.0.16-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

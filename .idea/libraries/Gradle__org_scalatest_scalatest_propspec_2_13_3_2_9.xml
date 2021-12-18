@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Gradle: org.scalatest:scalatest-propspec_2.13:3.2.9">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.scalatest/scalatest-propspec_2.13/3.2.9/eafaf4b0058fdd81e2adca0b4bb37e1bffa8a0a3/scalatest-propspec_2.13-3.2.9.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.scalatest/scalatest-propspec_2.13/3.2.9/ba15f6ad236d4b8bc5641bb516f19348de3309d1/scalatest-propspec_2.13-3.2.9-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

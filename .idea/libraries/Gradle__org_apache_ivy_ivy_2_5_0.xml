@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Gradle: org.apache.ivy:ivy:2.5.0">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.ivy/ivy/2.5.0/7cd93e73e91acb868717ebf2410f966f53ae5897/ivy-2.5.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.ivy/ivy/2.5.0/ba3c22daa486954c968d0d9b322354ba65cb11b5/ivy-2.5.0-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

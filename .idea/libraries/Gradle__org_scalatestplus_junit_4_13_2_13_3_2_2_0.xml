@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Gradle: org.scalatestplus:junit-4-13_2.13:3.2.2.0">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.scalatestplus/junit-4-13_2.13/3.2.2.0/75fd94bb9272ec7023409cb80547ff5ea9bb813d/junit-4-13_2.13-3.2.2.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.scalatestplus/junit-4-13_2.13/3.2.2.0/d667a1de3e392682978823404573b7a28cdaf215/junit-4-13_2.13-3.2.2.0-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

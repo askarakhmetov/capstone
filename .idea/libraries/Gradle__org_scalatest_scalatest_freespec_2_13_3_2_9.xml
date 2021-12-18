@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Gradle: org.scalatest:scalatest-freespec_2.13:3.2.9">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.scalatest/scalatest-freespec_2.13/3.2.9/558c6e981f3ad452e765f946b768c10e94a1d2a6/scalatest-freespec_2.13-3.2.9.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.scalatest/scalatest-freespec_2.13/3.2.9/a82a9fcbd6449ca9d327b0b3af389c534e77ee8c/scalatest-freespec_2.13-3.2.9-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
