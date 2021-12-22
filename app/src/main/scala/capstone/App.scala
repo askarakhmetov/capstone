@@ -71,21 +71,40 @@ object App {
           .cast("timestamp"))
         .as[MobAppClickProj]
     dfds.show(5,truncate = false)
-
-    val extractingPurch: TypedColumn[MobAppClickProj, Set[String]] =
-      new Aggregator[MobAppClickProj, Set[String], Set[String]] with Serializable {
-        def zero: Set[String] = Set[String]()
-        def reduce(es: Set[String], macp: MobAppClickProj): Set[String] =
-          if (macp.attributes.getOrElse(None)!=None) {
-            val ttt = macp.attributes.get
-            if (ttt.contains("purchase_id")) {es+ttt("purchase_id")}
-            else es
-          } else es
-        def merge(wx: Set[String], wy: Set[String]): Set[String] = wx.union(wy)
-        def finish(columning: Set[String]): Set[String] = columning
-        def bufferEncoder: Encoder[Set[String]] = implicitly(ExpressionEncoder[Set[String]])
-        def outputEncoder: Encoder[Set[String]] = implicitly(ExpressionEncoder[Set[String]])
-      }.toColumn
+    val df2ds: Dataset[PurchasesProj] =
+      df2.withColumn("purchaseTime", unix_timestamp(col("purchaseTime"), "yyyy-MM-dd HH:mm:ss")
+        .cast("timestamp"))
+        .withColumn("billingCost", col("billingCost").cast("Double"))
+        .withColumn("isConfirmed", col("isConfirmed").cast("Boolean"))
+        .as[PurchasesProj]
+//    val extractingPurch: TypedColumn[MobAppClickProj, Set[String]] =
+//      new Aggregator[MobAppClickProj, Set[String], Set[String]] with Serializable {
+//        def zero: Set[String] = Set[String]()
+//        def reduce(es: Set[String], macp: MobAppClickProj): Set[String] =
+//          if (macp.attributes.getOrElse(None)!=None) {
+//            val ttt = macp.attributes.get
+//            if (ttt.contains("purchase_id")) {es+ttt("purchase_id")}
+//            else es
+//          } else es
+//        def merge(wx: Set[String], wy: Set[String]): Set[String] = wx.union(wy)
+//        def finish(columning: Set[String]): Set[String] = columning
+//        def bufferEncoder: Encoder[Set[String]] = implicitly(ExpressionEncoder[Set[String]])
+//        def outputEncoder: Encoder[Set[String]] = implicitly(ExpressionEncoder[Set[String]])
+//      }.toColumn
+    val extractingPurch: TypedColumn[MobAppClickProj, Array[String]] =
+    new Aggregator[MobAppClickProj, Array[String], Array[String]] with Serializable {
+      def zero: Array[String] = Array[String]()
+      def reduce(es: Array[String], macp: MobAppClickProj): Array[String] =
+        if (macp.attributes.getOrElse(None)!=None) {
+          val ttt = macp.attributes.get
+          if (ttt.contains("purchase_id")) {es:+ttt("purchase_id")}
+          else es
+        } else es
+      def merge(wx: Array[String], wy: Array[String]): Array[String] = wx++wy
+      def finish(columning: Array[String]): Array[String] = columning
+      def bufferEncoder: Encoder[Array[String]] = implicitly(ExpressionEncoder[Array[String]])
+      def outputEncoder: Encoder[Array[String]] = implicitly(ExpressionEncoder[Array[String]])
+    }.toColumn
     val extractingChan: TypedColumn[MobAppClickProj, Set[String]] =
       new Aggregator[MobAppClickProj, Set[String], Set[String]] with Serializable {
         def zero: Set[String] = Set[String]()
@@ -117,12 +136,29 @@ object App {
 
     dfds.groupByKey(_.userId)
       .agg(
-        // our aggregator functions at work
         extractingPurch.name("purchaseId"),
         extractingCamp.name("campaignId"),
         extractingChan.name("channelId")
-      ).show(5)
+      ).show(5, truncate=false)
 
+    val dfdsNew = dfds.groupByKey(_.userId)
+      .agg(
+        extractingPurch.name("purchaseId_"),
+        extractingCamp.name("campaignId"),
+        extractingChan.name("channelId")
+      ).withColumnRenamed("key","sessionId")
+      .withColumn("purchaseId_", explode(col("purchaseId_")))
+      .withColumn("campaignId", explode(col("campaignId")))
+      .withColumn("channelId", explode(col("channelId")))
+
+    df2ds.show(5, truncate=false)
+
+    df2ds.join(dfdsNew, df2ds.col("purchaseId") === dfdsNew.col("purchaseId_"))
+      .drop("purchaseId_")
+      .show(5, truncate=false)
+
+    val targetDs = df2ds.join(dfdsNew, df2ds.col("purchaseId") === dfdsNew.col("purchaseId_"))
+      .drop("purchaseId_")
   }
 
 }
