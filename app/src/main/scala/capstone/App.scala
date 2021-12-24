@@ -4,7 +4,7 @@
 package capstone
 
 import org.apache.spark.{SparkConf, SparkContext}
-import org.apache.spark.sql.expressions.Aggregator
+import org.apache.spark.sql.expressions.{Aggregator, Window}
 import org.apache.spark.SparkContext._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
@@ -31,11 +31,16 @@ object App {
   import spark.implicits._
 
   def main(args: Array[String]): Unit = {
-    val df = spark.read.options(Map("header" -> "true", "inferSchema" -> "true")).csv("capstone-dataset/mobile_app_clickstream/mobile_app_clickstream_0.csv.gz")
-    val df2 = spark.read.options(Map("header" -> "true", "inferSchema" -> "true")).csv("capstone-dataset/user_purchases/user_purchases_0.csv.gz")
 
-    df.createOrReplaceTempView("sdf")
-    df2.createOrReplaceTempView("sdf2")
+    /** Tasks #1.Build Purchases Attribution Projection
+        The projection is dedicated to enabling a subsequent analysis of marketing campaigns
+        and channels.*/
+    val mac = spark.read.options(Map("header" -> "true", "inferSchema" -> "true")).csv("capstone-dataset/mobile_app_clickstream/mobile_app_clickstream_*.csv.gz")
+    val up = spark.read.options(Map("header" -> "true", "inferSchema" -> "true")).csv("capstone-dataset/user_purchases/user_purchases_*.csv.gz")
+
+    mac.createOrReplaceTempView("sdf")
+    up.createOrReplaceTempView("sdf2")
+    /** TODO Task #1.1. Implement it by utilizing default Spark SQL capabilities. Add Parquet output. task11out*/
 
     val query2 = """SELECT sdf2.purchaseId, purchaseTime, billingCost, isConfirmed, tmps.userId as sessionId, campaignId, channelId
                    |    FROM sdf2
@@ -58,39 +63,27 @@ object App {
                                       from sdf group by userId) as tmps
               ON tmps.purchaseId = sdf2.purchaseId order by sdf2.purchaseId"""
 
-    val projTable1 = spark.sql(query1.stripMargin)
+    val task11 = spark.sql(query1.stripMargin)
     val projTable2 = spark.sql(query2.stripMargin)
 
-    projTable1.show(5, truncate = false)
-    projTable2.show(5, truncate = false)
+    // projTable1.show(5, truncate = false)
+    // projTable2.show(5, truncate = false)
+    /** TODO Task #1.2. Implement it by using a custom Aggregator or UDAF. Add Parquet output. task12out*/
 
     import spark.implicits._
     val dfds: Dataset[MobAppClickProj] =
-      df.withColumn("attributes",from_json(col("attributes"),MapType(StringType,StringType)))
+      mac.withColumn("attributes",from_json(col("attributes"),MapType(StringType,StringType)))
         .withColumn("eventTime", unix_timestamp(col("eventTime"), "yyyy-MM-dd HH:mm:ss")
           .cast("timestamp"))
         .as[MobAppClickProj]
-    dfds.show(5,truncate = false)
+    //dfds.show(5,truncate = false)
     val df2ds: Dataset[PurchasesProj] =
-      df2.withColumn("purchaseTime", unix_timestamp(col("purchaseTime"), "yyyy-MM-dd HH:mm:ss")
+      up.withColumn("purchaseTime", unix_timestamp(col("purchaseTime"), "yyyy-MM-dd HH:mm:ss")
         .cast("timestamp"))
         .withColumn("billingCost", col("billingCost").cast("Double"))
         .withColumn("isConfirmed", col("isConfirmed").cast("Boolean"))
         .as[PurchasesProj]
-//    val extractingPurch: TypedColumn[MobAppClickProj, Set[String]] =
-//      new Aggregator[MobAppClickProj, Set[String], Set[String]] with Serializable {
-//        def zero: Set[String] = Set[String]()
-//        def reduce(es: Set[String], macp: MobAppClickProj): Set[String] =
-//          if (macp.attributes.getOrElse(None)!=None) {
-//            val ttt = macp.attributes.get
-//            if (ttt.contains("purchase_id")) {es+ttt("purchase_id")}
-//            else es
-//          } else es
-//        def merge(wx: Set[String], wy: Set[String]): Set[String] = wx.union(wy)
-//        def finish(columning: Set[String]): Set[String] = columning
-//        def bufferEncoder: Encoder[Set[String]] = implicitly(ExpressionEncoder[Set[String]])
-//        def outputEncoder: Encoder[Set[String]] = implicitly(ExpressionEncoder[Set[String]])
-//      }.toColumn
+
     val extractingPurch: TypedColumn[MobAppClickProj, Array[String]] =
     new Aggregator[MobAppClickProj, Array[String], Array[String]] with Serializable {
       def zero: Array[String] = Array[String]()
@@ -151,14 +144,91 @@ object App {
       .withColumn("campaignId", explode(col("campaignId")))
       .withColumn("channelId", explode(col("channelId")))
 
-    df2ds.show(5, truncate=false)
+//    df2ds.show(5, truncate=false)
+//
+//    df2ds.join(dfdsNew, df2ds.col("purchaseId") === dfdsNew.col("purchaseId_"))
+//      .drop("purchaseId_")
+//      .show(5, truncate=false)
 
-    df2ds.join(dfdsNew, df2ds.col("purchaseId") === dfdsNew.col("purchaseId_"))
+    val task12 = df2ds.join(dfdsNew, df2ds.col("purchaseId") === dfdsNew.col("purchaseId_"))
       .drop("purchaseId_")
-      .show(5, truncate=false)
 
-    val targetDs = df2ds.join(dfdsNew, df2ds.col("purchaseId") === dfdsNew.col("purchaseId_"))
-      .drop("purchaseId_")
+    /** Task #2.1.Top Campaigns:
+          What are the Top 10 marketing campaigns that bring the biggest
+          revenue (based on billingCost of confirmed purchases)? Add Parquet output. task21out*/
+    // ProjTable1 2
+    task11.createOrReplaceTempView("projT1")
+    val topCampQuery = """select campaignId, sum(billingCost) as sumbil
+                         |from projT1
+                         |where projT1.isConfirmed == True
+                         |group by campaignId
+                         |order by sumbil desc""".stripMargin
+
+    //spark.sql(topCampQuery).show(10, truncate=false)
+    val task21 = spark.sql(topCampQuery)
+
+    /** Task #2.2.Channels engagement performance:
+          What is the most popular (i.e. Top) channel that drives the highest
+          amount of unique sessions (engagements) with the App in each campaign? Add Parquet output. task22out*/
+    val chanEngPerfQuery = """select distinct tab1.* from (select campaignId, channelId, count(*) as sesnum
+                             |from projT1
+                             |group by campaignId, channelId
+                             |order by sesnum desc) tab1
+                             |left join (select campaignId, channelId, count(*) as sesnum
+                             |from projT1
+                             |group by campaignId, channelId
+                             |order by sesnum desc) tab2
+                             |on (tab1.campaignId=tab2.campaignId and tab1.sesnum<tab2.sesnum)
+                             |where tab2.campaignId is null
+                             |""".stripMargin
+    //spark.sql(chanEngPerfQuery).show(10, truncate=false)
+    val task22 = spark.sql(chanEngPerfQuery)
+
+    /** an additional alternative implementation of the same tasks by using
+          Spark Scala DataFrame / Datasets API only (without plain SQL) task2addout*/
+
+    val task2add = task11.select("campaignId", "channelId", "billingCost").groupBy("campaignId", "channelId")
+      .agg(
+        count("billingCost").as("sesnum"))
+      .withColumn("sesmax", max("sesnum")
+        .over(Window.partitionBy("campaignId")))
+      .where(col("sesnum") === col("sesmax"))
+      .drop("sesmax")
+
+
+    /** Requirements for task #2:
+        ● Should be implemented by using plain SQL on top of Spark DataFrame API
+        ● Will be a plus: an additional alternative implementation of the same tasks by using
+        Spark Scala DataFrame / Datasets API only (without plain SQL)
+     */
+
+    /** Task #3.1. Convert input dataset to parquet. Think about partitioning.
+         Compare performance on top CSV input and parquet input. Save output for Task #1 as parquet as well.*/
+    mac.write.parquet("output/mac.parquet")
+    up.write.parquet("output/up.parquet")
+    task11.write.parquet("output/task11.parquet")
+
+    /** TODO Task #3.2. Calculate metrics from Task #2 for different time periods:
+          ● For September 2020
+          ● For 2020-11-11
+          Compare performance on top csv input and partitioned parquet input.
+          Print and analyze query plans (logical and physical) for both inputs.*/
+
+    /** Requirements for Task 3
+      ● General input dataset should be partitioned by date
+      ● Save query plans as *.MD file. It will be discussed on exam.
+
+    TODO Build Weekly purchases Projection within one quarter
+
+     General requirements
+      The requirements that apply to all tasks:
+      ● Use Spark version 2.4.5 or higher
+      ● The logic should be covered with unit tests
+      ● The output should be saved as PARQUET files.
+      ● Configurable input and output for both tasks
+      ● Will be a plus: README file in the project documenting the solution.
+      ● Will be a plus: Integrational tests that cover the main method.
+     */
   }
 
 }
