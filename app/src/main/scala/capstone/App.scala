@@ -3,15 +3,12 @@
  */
 package capstone
 
-import org.apache.spark.sql.catalyst.dsl.expressions.StringToAttributeConversionHelper
-import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
-import org.apache.spark.sql.expressions.{Aggregator, Window}
-import org.apache.spark.sql.functions.{col, count, from_json, lit, to_date, to_timestamp}
-import org.apache.spark.sql.types.{DoubleType, MapType, StringType}
-import org.apache.spark.sql.{DataFrame, Dataset, DatasetHolder, Encoder, Encoders, SparkSession, TypedColumn, functions}
+import org.apache.spark.sql.SaveMode
+import org.apache.spark.sql.functions.{col, lit, to_date}
 
 import java.io.{File, FileWriter, PrintWriter}
-import java.sql.Timestamp
+
+
 
 object App {
 
@@ -36,294 +33,40 @@ object App {
 
   def main(args: Array[String]): Unit = {
 
-    /** Tasks #1.Build Purchases Attribution Projection
-        The projection is dedicated to enabling a subsequent analysis of marketing campaigns
-        and channels.*/
+    // task 1
+    val task1 = new Task1Job(spark)
+    val task11out = timeToFile(task1.runT1(), "task11 on csv with writing to parquet")
+    val task12out = timeToFile(task1.runT2(), "task12 on csv with writing to parquet")
 
-    val schemamac = Encoders.product[MobAppClickProj].schema
-    val schemaup = Encoders.product[PurchasesProj].schema
-    val mac = timeToFile(spark.read.options(Map("header" -> "true", "inferSchema" -> "true")).csv("capstone-dataset/mobile_app_clickstream/mobile_app_clickstream_*.csv.gz"),"mac csv")
-    val up = timeToFile(spark.read.options(Map("header" -> "true", "inferSchema" -> "true")).csv("capstone-dataset/user_purchases/user_purchases_*.csv.gz"),"up csv")
-
-    /** Task #1.1. Implement it by utilizing default Spark SQL capabilities.
-        Task #1.2. Implement it by using a custom Aggregator or UDAF.
-     *    Add Parquet output. task12out*/
-
-    val task11out = task1.subtask1(up, mac, 1)
-    val task12out = task1.subtask2(up, mac)
-
-    task11out.write.parquet("output/task11out.parquet")
-    task12out.write.parquet("output/task12out.parquet")
-
-    /** Task #2.1.Top Campaigns:
-          What are the Top 10 marketing campaigns that bring the biggest
-          revenue (based on billingCost of confirmed purchases)?
-
-        Task #2.2.Channels engagement performance:
-          What is the most popular (i.e. Top) channel that drives the highest
-          amount of unique sessions (engagements) with the App in each campaign?
-
-        Add Parquet output.
-
-        an additional alternative implementation of the same tasks by using
-          Spark Scala DataFrame / Datasets API only (without plain SQL)*/
-
-    val task21out = task2.subtask1(task11out)
-    val task22out = task2.subtask2(task11out)
-    val task22altout = task2.subtask2alt(task11out)
-
-    task21out.write.parquet("output/task21out.parquet")
-    task22out.write.parquet("output/task22out.parquet")
-    task22altout.write.parquet("output/task22altout.parquet")
-    /** todo  task22altout*/
-
+    // task 2
+    val task2 = new Task2Job(spark)
+    val task21out = timeToFile(task2.runT1(task11out), "task21 with writing to parquet")
+    val task22out = timeToFile(task2.runT2(task11out), "task22 with writing to parquet")
+   // val task21altout = timeToFile(task2.runT1alt(task11out), "task21alt with writing to parquet")
+    val task22altout = timeToFile(task2.runT2alt(task11out), "task22alt with writing to parquet")
 
     /** Task #3.1. Convert input dataset to parquet. Think about partitioning.
           Compare performance on top CSV input and parquet input. Save output for Task #1 as parquet as well.*/
-    // todo partitioning
+    val task3 = new Task3Job(spark, task11out)
 
-    mac.write.parquet("output/mac.parquet")
-    up.write.parquet("output/up.parquet")
+    timeToFile(task3.runV1SeptCsv(), "task31SeptCsvOut with writing to parquet")
+    timeToFile(task3.runV1SeptParquet(), "task31SeptParquetOut with writing to parquet")
+    timeToFile(task3.runV1NovCsv(), "task31NovCsvOut with writing to parquet")
+    timeToFile(task3.runV1NovParquet(), "task31NovParquetOut with writing to parquet")
 
-    val mac_parq = timeToFile(spark.read.parquet("output/mac.parquet"), "mac parquet")
-
-    val up_parq = timeToFile(spark.read.parquet("output/up.parquet"),"up parquet")
-
-
-    /**  Task #3.2. Calculate metrics from Task #2 for different time periods:
-          ● For September 2020
-          ● For 2020-11-11
-          Compare performance on top csv input and partitioned parquet input.
-          Print and analyze query plans (logical and physical) for both inputs.*/
-
-    // exporting task11/task12 to csv and parquet with partitionBy
-    task11out.withColumn("date",
-      to_date(col("purchaseTime"),"yyyy-MM-dd"))
-      .write
-      .partitionBy("date")
-      .parquet("output/inputTask3.parquet")
-
-    task11out.withColumn("date",
-      to_date(col("purchaseTime"),"yyyy-MM-dd"))
-      .write.option("header", "true").csv("output/inputTask3.csv")
-
-    // CSV and Parquet input
-    val inputTask3csv = spark.read.options(Map("header" -> "true", "inferSchema" -> "true"))
-      .csv("output/inputTask3.csv")
-
-    val inputTask3parquet = spark.read.parquet("output/inputTask3.parquet")
-
-    //------------------------------------------------------------------
-    // task321 - 2020-09 + spark.time() + logical query + physical query
-
-    // Taking time period for both
-    // September
-    val task321SeptCsv = inputTask3csv.filter(col("date").lt(lit("2020-10-01")).gt(lit("2020-08-11")))
-    val task321SeptParquet = inputTask3parquet.filter(col("date").lt(lit("2020-10-01")).gt(lit("2020-08-11")))
-    // November
-    val task321NovCsv = inputTask3csv.filter(col("date")===lit("2020-11-11"))
-    val task321NovParquet = inputTask3parquet.filter(col("date")===lit("2020-11-11"))
-
-    /*
-      What are the Top 10 marketing campaigns that bring the biggest
-      revenue (based on billingCost of confirmed purchases)?
-    */
-
-    import spark.implicits._
-
-    // September
-    val task3211SeptCsvout = timeToFile(task2.subtask1(task321SeptCsv.as[PurchAttrProj]), "task3211SeptCsvout")
-    val task3211SeptParquetout = timeToFile(task2.subtask1(task321SeptParquet.as[PurchAttrProj]),"task3211SeptParquetout")
-
-    // November
-    val task3211NovCsvout = timeToFile(task2.subtask1(task321NovCsv.as[PurchAttrProj]), "task3211NovCsvout")
-    val task3211NovParquetout = timeToFile(task2.subtask1(task321NovParquet.as[PurchAttrProj]), "task3211NovParquetout")
-
-    /*
-      What is the most popular (i.e. Top) channel that drives the highest
-      amount of unique sessions (engagements) with the App in each campaign?
-    */
-
-    //September
-    val task3212SeptCsvout = timeToFile(task2.subtask2(task321SeptCsv.as[PurchAttrProj]), "task3212SeptCsvout")
-    val task3212SeptParquetout = timeToFile(task2.subtask2(task321SeptParquet.as[PurchAttrProj]), "task3212SeptParquetout")
-
-    //November
-    val task3212NovCsvout = timeToFile(task2.subtask2(task321NovCsv.as[PurchAttrProj]), "task3212NovCsvout")
-    val task3212NovParquetout = timeToFile(task2.subtask2(task321NovParquet.as[PurchAttrProj]), "task3212NovParquetout")
-
-    // print and analyze query plans for both inputs
-    val br = inputTask3parquet.queryExecution.toString()
-    val tr = inputTask3csv.queryExecution.toString()
-
-    val writer = new PrintWriter(new File("output/queries.md" ))
-    writer.write("parquet \n --------------------------- \n"+br+"\n")
-    writer.write("csv \n --------------------------- \n"+tr)
-
-    writer.close()
-
-    /** Requirements for Task 3
-          ● General input dataset should be partitioned by date
-          ● Save query plans as *.MD file. It will be discussed on exam.
-
+    timeToFile(task3.runV2SeptCsv(), "task32SeptCsvOut with writing to parquet")
+    timeToFile(task3.runV2SeptParquet(), "task32SeptParquetOut with writing to parquet")
+    timeToFile(task3.runV2NovCsv(), "task32NovCsvOut with writing to parquet")
+    timeToFile(task3.runV2NovParquet(), "task32NovParquetOut with writing to parquet")
+/*
     TODO Build Weekly purchases Projection within one quarter
 
      General requirements
       The requirements that apply to all tasks:
-      ● Use Spark version 2.4.5 or higher
-      todo ● The logic should be covered with unit tests
-      ● The output should be saved as PARQUET files.
       todo ● Configurable input and output for both tasks
       todo ● Will be a plus: README file in the project documenting the solution.
       todo ● Will be a plus: Integrational tests that cover the main method.
      */
   }
 
-}
-
-case class MobAppClickProj(userId: String,
-                           eventId: String,
-                           eventTime: Timestamp,
-                           eventType: String,
-                           attributes: Option[Map[String, String]])
-
-case class PurchasesProj(purchaseId: String,
-                         purchaseTime: Timestamp,
-                         billingCost: Double,
-                         isConfirmed: Boolean)
-
-case class PurchAttrProj(purchaseId: String,
-                         purchaseTime: Timestamp,
-                         billingCost: Double,
-                         isConfirmed: Boolean,
-                         // a session starts with app_open event and finishes with app_close
-                         sessionId: String,
-                         campaignId: String, // derived from app_open#attributes#campaign_id
-                         channelId: String // derived from app_open#attributes#channel_id
-                        )
-case class TopMarkCamp(campaignId: String,
-                       billingSum: Double,
-                       rank: Int)
-case class TopSesChan(campaignId: String,
-                      channelId: String,
-                      sessionNum: BigInt)
-
-object task1{
-  val spark: SparkSession = SparkSession.builder().appName("Capstone").master("local").getOrCreate()
-
-  def subtask1(up: DataFrame, mac: DataFrame, query: Int): Dataset[PurchAttrProj]={
-    import spark.implicits._
-    mac.createOrReplaceTempView("sdf")
-    up.createOrReplaceTempView("sdf2")
-
-    val query2 = """SELECT sdf2.purchaseId, purchaseTime, billingCost, isConfirmed, tmps.userId as sessionId, campaignId, channelId
-                   |    FROM sdf2
-                   |    INNER JOIN (select userId, get_json_object(attributes, '$.purchase_id') as purchaseId
-                              from sdf order by userId) as tmps
-                   |    ON tmps.purchaseId = sdf2.purchaseId
-                   |    INNER JOIN (select userId, get_json_object(attributes, '$.campaign_id') as campaignId,
-                                            get_json_object(attributes, '$.channel_id') as channelId
-                            from sdf
-                            where get_json_object(attributes, '$.campaign_id') is not null
-                            and get_json_object(attributes, '$.channel_id') is not null
-                            order by userId) as tmpss
-                   |    ON tmpss.userId = tmps.userId order by sdf2.purchaseId""".stripMargin
-
-    val query1 = """SELECT sdf2.purchaseId, purchaseTime, billingCost, isConfirmed, userId as sessionId, campaignId, channelId
-                   |    FROM sdf2 INNER JOIN (select userId,
-                                      get_json_object(collect_list(attributes)[0], '$.campaign_id') as campaignId,
-                                      get_json_object(collect_list(attributes)[0], '$.channel_id') as channelId,
-                                      get_json_object(collect_list(attributes)[1], '$.purchase_id') as purchaseId
-                                      from sdf group by userId) as tmps
-              ON tmps.purchaseId = sdf2.purchaseId order by sdf2.purchaseId""".stripMargin
-    query match {
-      case 1 => spark.sql(query1).withColumn("purchaseTime",
-        to_timestamp(col("purchaseTime"))).withColumn("billingCost",
-        col("purchaseTime").cast(DoubleType)).as[PurchAttrProj]
-      case _ => spark.sql(query2).withColumn("purchaseTime",
-        to_timestamp(col("purchaseTime"))).withColumn("billingCost",
-        col("purchaseTime").cast(DoubleType)).as[PurchAttrProj]
-    }
-  }
-
-  def subtask2(up: DataFrame, mac: DataFrame): Dataset[PurchAttrProj] = {
-    import spark.implicits._
-    up.join(mac
-          .withColumn("attributes",from_json(col("attributes"),MapType(StringType,StringType)))
-          .withColumn("eventTime",
-            to_timestamp(col("eventTime")))
-          .as[MobAppClickProj]
-          .groupByKey(_.userId)
-          .agg(aggDfa.name("aggcol"))
-          .withColumn("purchaseId", col("aggcol")(2))
-          .withColumn("campaignId", col("aggcol")(0))
-          .withColumn("channelId", col("aggcol")(1))
-          .withColumnRenamed("value", "sessionId")
-          .drop("aggcol"), Seq("purchaseId"))
-      .withColumn("purchaseTime",
-      to_timestamp(col("purchaseTime")))
-      .withColumnRenamed("key", "sessionId")
-      .withColumn("billingCost",
-        col("purchaseTime").cast(DoubleType))
-      .as[PurchAttrProj]
-  }
-
-  val aggDfa : TypedColumn[MobAppClickProj, Set[String]] =
-    new Aggregator[MobAppClickProj, Set[String], Set[String]] with Serializable {
-      def zero: Set[String] = Set[String]()
-      def reduce(es: Set[String], macp: MobAppClickProj): Set[String] =
-        if (macp.attributes.getOrElse(None)!=None) {
-          val ttt = macp.attributes.get
-          if (ttt.contains("campaign_id")) {es+ttt("campaign_id")+ttt("channel_id")}
-          else if (ttt.contains("purchase_id")) {es+ttt("purchase_id")}
-          else es
-        } else es
-      def merge(wx: Set[String], wy: Set[String]): Set[String] = wx.union(wy)
-      def finish(columning: Set[String]): Set[String] = columning
-      def bufferEncoder: Encoder[Set[String]] = implicitly(ExpressionEncoder[Set[String]])
-      def outputEncoder: Encoder[Set[String]] = implicitly(ExpressionEncoder[Set[String]])
-    }.toColumn
-}
-
-object task2{
-  val spark: SparkSession = SparkSession.builder().appName("Capstone").master("local").getOrCreate()
-  def subtask1(task11out: Dataset[PurchAttrProj]):Dataset[TopMarkCamp] = {
-    import spark.implicits._
-    task11out.createOrReplaceTempView("task11out")
-    val topCampQuery = """ select * from (select a.campaignId, a.sumbil, dense_rank() over (order by a.sumbil desc) as rank
-                          | from (select campaignId, sum(billingCost) as sumbil
-                                  |from task11out
-                                  |where task11out.isConfirmed == True
-                                  |group by campaignId
-                                  |order by sumbil desc) a) b where b.rank<=10 """.stripMargin
-    spark.sql(topCampQuery).withColumnRenamed("sumbil", "billingSum").as[TopMarkCamp]
-  }
-  def subtask2(task11out: Dataset[PurchAttrProj]):Dataset[TopSesChan] = {
-    import spark.implicits._
-    task11out.createOrReplaceTempView("task11out")
-    val chanEngPerfQuery = """select distinct tab1.* from (select campaignId, channelId, count(*) as sesnum
-                             |from task11out
-                             |group by campaignId, channelId
-                             |order by sesnum desc) tab1
-                             |left join (select campaignId, channelId, count(*) as sesnum
-                             |from task11out
-                             |group by campaignId, channelId
-                             |order by sesnum desc) tab2
-                             |on (tab1.campaignId=tab2.campaignId and tab1.sesnum<tab2.sesnum)
-                             |where tab2.campaignId is null
-                             |""".stripMargin
-    spark.sql(chanEngPerfQuery).withColumnRenamed("sesnum", "sessionNum").as[TopSesChan]
-  }
-  def subtask2alt(task11out: Dataset[PurchAttrProj]):Dataset[TopSesChan] = {
-    import spark.implicits._
-    task11out.select("campaignId", "channelId", "billingCost")
-          .groupBy("campaignId", "channelId")
-          .agg(
-            count("billingCost").as("sesnum"))
-          .withColumn("sesmax", functions.max("sesnum")
-            .over(Window.partitionBy("campaignId")))
-          .where(col("sesnum") === col("sesmax"))
-          .drop("sesmax").withColumnRenamed("sesnum", "sessionNum").as[TopSesChan]
-  }
-  def subtask1alt(task11out: Dataset[PurchAttrProj]):Dataset[TopMarkCamp] = ???
 }
