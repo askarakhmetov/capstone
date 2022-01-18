@@ -6,23 +6,24 @@ import org.apache.spark.sql.functions.{col, from_json, to_timestamp}
 import org.apache.spark.sql.types.{DoubleType, MapType, StringType}
 import org.apache.spark.sql._
 
+import java.sql.Timestamp
+
 class Task1Job(spark: SparkSession){
 
-  def runT1(): Dataset[PurchAttrProj] ={
+  def runT1(): Unit ={
     val mac = spark.read.options(Map("header" -> "true", "inferSchema" -> "true")).csv("capstone-dataset/mobile_app_clickstream/mobile_app_clickstream_*.csv.gz")
     val up = spark.read.options(Map("header" -> "true", "inferSchema" -> "true")).csv("capstone-dataset/user_purchases/user_purchases_*.csv.gz")
     val res = purchAttrProjGen(up, mac)
-    res.write.mode(SaveMode.Overwrite).parquet("output/task11out")
-    res
+    res.write.mode(SaveMode.Overwrite).option("header", "true").csv("output/task11outcsv")
+    res.write.mode(SaveMode.Overwrite).parquet("output/task11outparquet")
   }
 
-  def runT2(): Dataset[PurchAttrProj] ={
+  def runT2(): Unit ={
     val mac = spark.read.options(Map("header" -> "true", "inferSchema" -> "true")).csv("capstone-dataset/mobile_app_clickstream/mobile_app_clickstream_*.csv.gz")
     val up = spark.read.options(Map("header" -> "true", "inferSchema" -> "true")).csv("capstone-dataset/user_purchases/user_purchases_*.csv.gz")
 
     val res = purchAttrProjAggGen(up, mac)
     res.write.mode(SaveMode.Overwrite).parquet("output/task12out")
-    res
   }
 
 
@@ -92,3 +93,24 @@ class Task1Job(spark: SparkSession){
       def outputEncoder: Encoder[Set[String]] = implicitly(ExpressionEncoder[Set[String]])
     }.toColumn
 }
+
+case class MobAppClickProj(userId: String,
+                           eventId: String,
+                           eventTime: Timestamp,
+                           eventType: String,
+                           attributes: Option[Map[String, String]])
+
+case class PurchasesProj(purchaseId: String,
+                         purchaseTime: Timestamp,
+                         billingCost: Double,
+                         isConfirmed: Boolean)
+
+case class PurchAttrProj(purchaseId: String,
+                         purchaseTime: Timestamp,
+                         billingCost: Double,
+                         isConfirmed: Boolean,
+                         // a session starts with app_open event and finishes with app_close
+                         sessionId: String,
+                         campaignId: String, // derived from app_open#attributes#campaign_id
+                         channelId: String // derived from app_open#attributes#channel_id
+                        )

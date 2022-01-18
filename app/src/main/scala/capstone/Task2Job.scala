@@ -6,27 +6,24 @@ import org.apache.spark.sql.{Dataset, SaveMode, SparkSession, functions}
 
 class Task2Job(spark: SparkSession){
 
-  def runT1(task11out: Dataset[PurchAttrProj]):Dataset[TopMarkCamp]={
-    val res = topMarkCampGen(task11out)
-    res.write.mode(SaveMode.Overwrite).parquet("output/task21out")
-    res
-  }
-
-  def runT2(task11out: Dataset[PurchAttrProj]):Dataset[TopSesChan]={
-    val res = topSesChanGen(task11out)
-    res.write.mode(SaveMode.Overwrite).parquet("output/task22out")
-    res
-  }
-
-  /*def runT1alt(task11out: Dataset[PurchAttrProj]):Dataset[TopMarkCamp]={
-    val res = topMarkCampAltGen(task11out)
-    res.write.mode(SaveMode.Overwrite).parquet("output/task21altout")
-    res}*/
-
-  def runT2alt(task11out: Dataset[PurchAttrProj]):Dataset[TopSesChan]={
-    val res = topSesChanAltGen(task11out)
-    res.write.mode(SaveMode.Overwrite).parquet("output/task22altout")
-    res
+  def runTaskNum(taskNum: String): Unit = {
+    import spark.implicits._
+    val task11out = spark.read.options(Map("header" -> "true", "inferSchema" -> "true"))
+      .csv("output/task11outcsv").as[PurchAttrProj]
+    taskNum match {
+      case "task21" =>
+        val res = topMarkCampGen(task11out)
+        res.write.mode(SaveMode.Overwrite).parquet("output/task21out")
+      case "task22" =>
+        val res = topSesChanGen(task11out)
+        res.write.mode(SaveMode.Overwrite).parquet("output/task22ut")
+      case "task21alt" =>
+        val res = topMarkCampAltGen(task11out)
+        res.write.mode(SaveMode.Overwrite).parquet("output/task21altout")
+      case "task22alt" =>
+        val res = topSesChanAltGen(task11out)
+        res.write.mode(SaveMode.Overwrite).parquet("output/task22altout")
+    }
   }
 
   private[capstone] def topMarkCampGen(task11out: Dataset[PurchAttrProj]):Dataset[TopMarkCamp] = {
@@ -80,3 +77,44 @@ class Task2Job(spark: SparkSession){
       .as[TopMarkCamp]
   }
 }
+
+case class TopMarkCamp(campaignId: String,
+                       billingSum: Double,
+                       rank: Int)
+
+case class TopSesChan(campaignId: String,
+                      channelId: String,
+                      sessionNum: BigInt)
+/*
+  def runT1(): Unit = {
+    import spark.implicits._
+    val task11out = spark.read.options(Map("header" -> "true", "inferSchema" -> "true"))
+      .csv("output/task11out.csv").as[PurchAttrProj]
+    val res = topMarkCampGen(task11out)
+    res.write.mode(SaveMode.Overwrite).parquet("output/task21out")
+  }
+
+  def runT2(): Unit = {
+    import spark.implicits._
+    val task11out = spark.read.options(Map("header" -> "true", "inferSchema" -> "true"))
+      .csv("output/task11out.csv").as[PurchAttrProj]
+    val res = topSesChanGen(task11out)
+    res.write.mode(SaveMode.Overwrite).parquet("output/task22out")
+  }
+
+  def runT1alt(): Unit ={
+    import spark.implicits._
+    val task11out = spark.read.options(Map("header" -> "true", "inferSchema" -> "true"))
+      .csv("output/task11out.csv").as[PurchAttrProj]
+    val res = topMarkCampAltGen(task11out)
+    res.write.mode(SaveMode.Overwrite).parquet("output/task21altout")
+  }
+
+  def runT2alt(): Unit = {
+    import spark.implicits._
+    val task11out = spark.read.options(Map("header" -> "true", "inferSchema" -> "true"))
+      .csv("output/task11out.csv").as[PurchAttrProj]
+    val res = topSesChanAltGen(task11out)
+    res.write.mode(SaveMode.Overwrite).parquet("output/task22altout")
+  }
+* */

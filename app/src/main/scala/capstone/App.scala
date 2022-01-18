@@ -35,29 +35,29 @@ object App {
 
     // task 1
     val task1 = new Task1Job(spark)
-    val task11out = timeToFile(task1.runT1(), "task11 on csv with writing to parquet")
-    val task12out = timeToFile(task1.runT2(), "task12 on csv with writing to parquet")
+    timeToFile(task1.runT1(), "task11 on csv with writing to parquet")
+    timeToFile(task1.runT2(), "task12 on csv with writing to parquet")
 
     // task 2
     val task2 = new Task2Job(spark)
-    val task21out = timeToFile(task2.runT1(task11out), "task21 with writing to parquet")
-    val task22out = timeToFile(task2.runT2(task11out), "task22 with writing to parquet")
-   // val task21altout = timeToFile(task2.runT1alt(task11out), "task21alt with writing to parquet")
-    val task22altout = timeToFile(task2.runT2alt(task11out), "task22alt with writing to parquet")
+    val task21out = timeToFile(task2.runTaskNum("task21"), "task21 with writing to parquet")
+    val task22out = timeToFile(task2.runTaskNum("task22"), "task22 with writing to parquet")
+    val task21altout = timeToFile(task2.runTaskNum("task21alt"), "task21alt with writing to parquet")
+    val task22altout = timeToFile(task2.runTaskNum("task22alt"), "task22alt with writing to parquet")
 
     /** Task #3.1. Convert input dataset to parquet. Think about partitioning.
           Compare performance on top CSV input and parquet input. Save output for Task #1 as parquet as well.*/
-    val task3 = new Task3Job(spark, task11out)
+    val task3 = new Task3Job(spark)
 
-    timeToFile(task3.runV1SeptCsv(), "task31SeptCsvOut with writing to parquet")
-    timeToFile(task3.runV1SeptParquet(), "task31SeptParquetOut with writing to parquet")
-    timeToFile(task3.runV1NovCsv(), "task31NovCsvOut with writing to parquet")
-    timeToFile(task3.runV1NovParquet(), "task31NovParquetOut with writing to parquet")
+    timeToFile(task3.runDateAndFormatV1("2020-08-31","2020-10-01","csv"), "task31SeptCsvOut with writing to parquet")
+    timeToFile(task3.runDateAndFormatV1("2020-08-31","2020-10-01","parquet"), "task31SeptParquetOut with writing to parquet")
+    timeToFile(task3.runDateAndFormatV1("2020-11-11","2020-11-11","csv"), "task31NovCsvOut with writing to parquet")
+    timeToFile(task3.runDateAndFormatV1("2020-11-11","2020-11-11","parquet"), "task31NovParquetOut with writing to parquet")
 
-    timeToFile(task3.runV2SeptCsv(), "task32SeptCsvOut with writing to parquet")
-    timeToFile(task3.runV2SeptParquet(), "task32SeptParquetOut with writing to parquet")
-    timeToFile(task3.runV2NovCsv(), "task32NovCsvOut with writing to parquet")
-    timeToFile(task3.runV2NovParquet(), "task32NovParquetOut with writing to parquet")
+    timeToFile(task3.runDateAndFormatV2("2020-08-31","2020-10-01","csv"), "task32SeptCsvOut with writing to parquet")
+    timeToFile(task3.runDateAndFormatV2("2020-08-31","2020-10-01","parquet"), "task32SeptParquetOut with writing to parquet")
+    timeToFile(task3.runDateAndFormatV2("2020-11-11","2020-11-11","csv"), "task32NovCsvOut with writing to parquet")
+    timeToFile(task3.runDateAndFormatV2("2020-11-11","2020-11-11","parquet"), "task32NovParquetOut with writing to parquet")
 /*
     TODO Build Weekly purchases Projection within one quarter
 
