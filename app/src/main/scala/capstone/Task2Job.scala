@@ -1,5 +1,6 @@
 package capstone
 
+import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions.{col, count, dense_rank, sum}
 import org.apache.spark.sql.{Dataset, SaveMode, SparkSession, functions}
@@ -8,21 +9,22 @@ class Task2Job(spark: SparkSession){
 
   def runTaskNum(taskNum: String): Unit = {
     import spark.implicits._
+    val conf: Config = ConfigFactory.load()
     val task11out = spark.read.options(Map("header" -> "true", "inferSchema" -> "true"))
-      .csv("output/task11outcsv").as[PurchAttrProj]
+      .csv(conf.getString("task11csv")).as[PurchAttrProj]
     taskNum match {
       case "task21" =>
         val res = topMarkCampGen(task11out)
-        res.write.mode(SaveMode.Overwrite).parquet("output/task21out")
+        res.write.mode(SaveMode.Overwrite).parquet(conf.getString("task21"))
       case "task22" =>
         val res = topSesChanGen(task11out)
-        res.write.mode(SaveMode.Overwrite).parquet("output/task22ut")
+        res.write.mode(SaveMode.Overwrite).parquet(conf.getString("task21"))
       case "task21alt" =>
         val res = topMarkCampAltGen(task11out)
-        res.write.mode(SaveMode.Overwrite).parquet("output/task21altout")
+        res.write.mode(SaveMode.Overwrite).parquet(conf.getString("task21alt"))
       case "task22alt" =>
         val res = topSesChanAltGen(task11out)
-        res.write.mode(SaveMode.Overwrite).parquet("output/task22altout")
+        res.write.mode(SaveMode.Overwrite).parquet(conf.getString("task22alt"))
     }
   }
 
@@ -50,6 +52,7 @@ class Task2Job(spark: SparkSession){
                              |order by sessionNum desc) tab2
                              |on (tab1.campaignId=tab2.campaignId and tab1.sessionNum<tab2.sessionNum)
                              |where tab2.campaignId is null
+                             |order by tab1.sessionNum
                              |""".stripMargin
     spark.sql(chanEngPerfQuery).as[TopSesChan]
   }

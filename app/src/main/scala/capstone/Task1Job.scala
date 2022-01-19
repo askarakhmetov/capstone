@@ -1,5 +1,6 @@
 package capstone
 
+import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.sql.expressions.Aggregator
 import org.apache.spark.sql.functions.{col, from_json, to_timestamp}
@@ -11,19 +12,20 @@ import java.sql.Timestamp
 class Task1Job(spark: SparkSession){
 
   def runT1(): Unit ={
-    val mac = spark.read.options(Map("header" -> "true", "inferSchema" -> "true")).csv("capstone-dataset/mobile_app_clickstream/mobile_app_clickstream_*.csv.gz")
-    val up = spark.read.options(Map("header" -> "true", "inferSchema" -> "true")).csv("capstone-dataset/user_purchases/user_purchases_*.csv.gz")
+    val conf: Config = ConfigFactory.load()
+    val mac = spark.read.options(Map("header" -> "true", "inferSchema" -> "true")).csv(conf.getString("mac.input"))
+    val up = spark.read.options(Map("header" -> "true", "inferSchema" -> "true")).csv(conf.getString("up.input"))
     val res = purchAttrProjGen(up, mac)
-    res.write.mode(SaveMode.Overwrite).option("header", "true").csv("output/task11outcsv")
-    res.write.mode(SaveMode.Overwrite).parquet("output/task11outparquet")
+    res.write.mode(SaveMode.Overwrite).option("header", "true").csv(conf.getString("task11csv"))
+    res.write.mode(SaveMode.Overwrite).parquet(conf.getString("task11parquet"))
   }
 
   def runT2(): Unit ={
-    val mac = spark.read.options(Map("header" -> "true", "inferSchema" -> "true")).csv("capstone-dataset/mobile_app_clickstream/mobile_app_clickstream_*.csv.gz")
-    val up = spark.read.options(Map("header" -> "true", "inferSchema" -> "true")).csv("capstone-dataset/user_purchases/user_purchases_*.csv.gz")
-
+    val conf: Config = ConfigFactory.load()
+    val mac = spark.read.options(Map("header" -> "true", "inferSchema" -> "true")).csv(conf.getString("mac.input"))
+    val up = spark.read.options(Map("header" -> "true", "inferSchema" -> "true")).csv(conf.getString("up.input"))
     val res = purchAttrProjAggGen(up, mac)
-    res.write.mode(SaveMode.Overwrite).parquet("output/task12out")
+    res.write.mode(SaveMode.Overwrite).parquet(conf.getString("task12"))
   }
 
 
