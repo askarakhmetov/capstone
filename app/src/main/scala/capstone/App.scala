@@ -40,10 +40,10 @@ object App {
 
     // task 2
     val task2 = new Task2Job(spark)
-    val task21out = timeToFile(task2.runTaskNum("task21"), "task21 with writing to parquet")
-    val task22out = timeToFile(task2.runTaskNum("task22"), "task22 with writing to parquet")
-    val task21altout = timeToFile(task2.runTaskNum("task21alt"), "task21alt with writing to parquet")
-    val task22altout = timeToFile(task2.runTaskNum("task22alt"), "task22alt with writing to parquet")
+    timeToFile(task2.runTaskNum("task21"), "task21 with writing to parquet")
+    timeToFile(task2.runTaskNum("task22"), "task22 with writing to parquet")
+    timeToFile(task2.runTaskNum("task21alt"), "task21alt with writing to parquet")
+    timeToFile(task2.runTaskNum("task22alt"), "task22alt with writing to parquet")
 
     /** Task #3.1. Convert input dataset to parquet. Think about partitioning.
           Compare performance on top CSV input and parquet input. Save output for Task #1 as parquet as well.*/
@@ -63,7 +63,6 @@ object App {
 
      General requirements
       The requirements that apply to all tasks:
-      todo ● Configurable input and output for both tasks
       todo ● Will be a plus: README file in the project documenting the solution.
       todo ● Will be a plus: Integrational tests that cover the main method.
      */

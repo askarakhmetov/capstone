@@ -22,7 +22,7 @@ class Task3Job(spark: SparkSession) {
           .filter(col("date") <= lit(dateEnd) and col("date") >= lit(dateStart))
         val res = givFun(ds.as[PurchAttrProj])
 
-//        reflect.io.File("output/queryCsv.md").writeAll(task11out.queryExecution.toString())
+        reflect.io.File("output/query-"+version+"_"+dateStart+"_"+dateEnd+"_Csv.md").writeAll(task11out.queryExecution.toString())
 
         res.write.mode(SaveMode.Overwrite)
           .parquet(conf.getString("task3")+version+"_"+dateStart+"_"+dateEnd+"_"+format+"_"+"Out")
@@ -40,7 +40,7 @@ class Task3Job(spark: SparkSession) {
           .as[PurchAttrProj]
         val res = givFun(inputTask3parquet)
 
-//        reflect.io.File("output/queryParquet.md").writeAll(inputTask3parquet.queryExecution.toString())
+        reflect.io.File("output/query_"+version+"_"+dateStart+"_"+dateEnd+"_Parquet.md").writeAll(inputTask3parquet.queryExecution.toString())
 
         res.write.mode(SaveMode.Overwrite)
           .parquet(conf.getString("task3")+version+"_"+dateStart+"_"+dateEnd+"_"+format+"_"+"Out")
