@@ -9,10 +9,9 @@ import org.apache.spark.sql._
 
 import java.sql.Timestamp
 
-class Task1Job(spark: SparkSession){
+class Task1Job(spark: SparkSession, conf: Config){
 
   def runT1(): Unit ={
-    val conf: Config = ConfigFactory.load()
     val mac = spark.read.options(Map("header" -> "true", "inferSchema" -> "true")).csv(conf.getString("mac.input"))
     val up = spark.read.options(Map("header" -> "true", "inferSchema" -> "true")).csv(conf.getString("up.input"))
     val res = purchAttrProjGen(up, mac)
@@ -21,7 +20,6 @@ class Task1Job(spark: SparkSession){
   }
 
   def runT2(): Unit ={
-    val conf: Config = ConfigFactory.load()
     val mac = spark.read.options(Map("header" -> "true", "inferSchema" -> "true")).csv(conf.getString("mac.input"))
     val up = spark.read.options(Map("header" -> "true", "inferSchema" -> "true")).csv(conf.getString("up.input"))
     val res = purchAttrProjAggGen(up, mac)

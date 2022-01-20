@@ -3,6 +3,7 @@
  */
 package capstone
 
+import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.spark.sql.SaveMode
 import org.apache.spark.sql.functions.{col, lit, to_date}
 
@@ -33,21 +34,22 @@ object App {
 
   def main(args: Array[String]): Unit = {
 
+    val conf: Config = ConfigFactory.load()
+
     // task 1
-    val task1 = new Task1Job(spark)
+    val task1 = new Task1Job(spark, conf)
     timeToFile(task1.runT1(), "task11 on csv with writing to parquet")
     timeToFile(task1.runT2(), "task12 on csv with writing to parquet")
 
     // task 2
-    val task2 = new Task2Job(spark)
+    val task2 = new Task2Job(spark, conf)
     timeToFile(task2.runTaskNum("task21"), "task21 with writing to parquet")
     timeToFile(task2.runTaskNum("task22"), "task22 with writing to parquet")
     timeToFile(task2.runTaskNum("task21alt"), "task21alt with writing to parquet")
     timeToFile(task2.runTaskNum("task22alt"), "task22alt with writing to parquet")
 
-    /** Task #3.1. Convert input dataset to parquet. Think about partitioning.
-          Compare performance on top CSV input and parquet input. Save output for Task #1 as parquet as well.*/
-    val task3 = new Task3Job(spark)
+    // task 3
+    val task3 = new Task3Job(spark, conf)
 
     timeToFile(task3.runDateAndFormatV1("2020-08-31","2020-10-01","csv"), "task31SeptCsvOut with writing to parquet")
     timeToFile(task3.runDateAndFormatV1("2020-08-31","2020-10-01","parquet"), "task31SeptParquetOut with writing to parquet")
@@ -58,14 +60,6 @@ object App {
     timeToFile(task3.runDateAndFormatV2("2020-08-31","2020-10-01","parquet"), "task32SeptParquetOut with writing to parquet")
     timeToFile(task3.runDateAndFormatV2("2020-11-11","2020-11-11","csv"), "task32NovCsvOut with writing to parquet")
     timeToFile(task3.runDateAndFormatV2("2020-11-11","2020-11-11","parquet"), "task32NovParquetOut with writing to parquet")
-/*
-    TODO Build Weekly purchases Projection within one quarter
-
-     General requirements
-      The requirements that apply to all tasks:
-      todo ● Will be a plus: README file in the project documenting the solution.
-      todo ● Will be a plus: Integrational tests that cover the main method.
-     */
   }
 
 }

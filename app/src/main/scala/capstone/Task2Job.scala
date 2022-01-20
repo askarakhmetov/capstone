@@ -5,11 +5,10 @@ import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions.{col, count, dense_rank, sum}
 import org.apache.spark.sql.{Dataset, SaveMode, SparkSession, functions}
 
-class Task2Job(spark: SparkSession){
+class Task2Job(spark: SparkSession, conf: Config){
 
   def runTaskNum(taskNum: String): Unit = {
     import spark.implicits._
-    val conf: Config = ConfigFactory.load()
     val task11out = spark.read.options(Map("header" -> "true", "inferSchema" -> "true"))
       .csv(conf.getString("task11csv")).as[PurchAttrProj]
     taskNum match {
@@ -88,36 +87,3 @@ case class TopMarkCamp(campaignId: String,
 case class TopSesChan(campaignId: String,
                       channelId: String,
                       sessionNum: BigInt)
-/*
-  def runT1(): Unit = {
-    import spark.implicits._
-    val task11out = spark.read.options(Map("header" -> "true", "inferSchema" -> "true"))
-      .csv("output/task11out.csv").as[PurchAttrProj]
-    val res = topMarkCampGen(task11out)
-    res.write.mode(SaveMode.Overwrite).parquet("output/task21out")
-  }
-
-  def runT2(): Unit = {
-    import spark.implicits._
-    val task11out = spark.read.options(Map("header" -> "true", "inferSchema" -> "true"))
-      .csv("output/task11out.csv").as[PurchAttrProj]
-    val res = topSesChanGen(task11out)
-    res.write.mode(SaveMode.Overwrite).parquet("output/task22out")
-  }
-
-  def runT1alt(): Unit ={
-    import spark.implicits._
-    val task11out = spark.read.options(Map("header" -> "true", "inferSchema" -> "true"))
-      .csv("output/task11out.csv").as[PurchAttrProj]
-    val res = topMarkCampAltGen(task11out)
-    res.write.mode(SaveMode.Overwrite).parquet("output/task21altout")
-  }
-
-  def runT2alt(): Unit = {
-    import spark.implicits._
-    val task11out = spark.read.options(Map("header" -> "true", "inferSchema" -> "true"))
-      .csv("output/task11out.csv").as[PurchAttrProj]
-    val res = topSesChanAltGen(task11out)
-    res.write.mode(SaveMode.Overwrite).parquet("output/task22altout")
-  }
-* */
