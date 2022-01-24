@@ -1,13 +1,13 @@
 # capstone project
 
-##Domain
+## Domain
 You work at a data engineering department of a company building an ecommerce platform. There is a mobile application that is used by customers to transact with its on-line store. Marketing department of the company has set up various campaigns (e.g. “Buy one thing and get another one as a gift”, etc.) via different marketing channels (e.g. Google / Yandex / Facebook Ads, etc.).
 Now the business wants to know the efficiency of the campaigns and channels. Let’s help them out!
 
-###Given datasets
+### Given datasets
 https://github.com/gridu/INTRO_SPARK-SCALA_FOR_STUDENTS
 
-###Tasks #1.Build Purchases Attribution Projection
+### Tasks #1.Build Purchases Attribution Projection
 
 - **_Task #1.1._** Implement it by utilizing default Spark SQL capabilities.
 
@@ -18,7 +18,7 @@ and **purchAttrProjAggGen** using custom Aggregator (use **_runT2()_** to run).
 
 
 
-###Task #2. Calculate Marketing Campaigns And Channels Statistics
+### Task #2. Calculate Marketing Campaigns And Channels Statistics
 
 - _**Task #2.1.Top Campaigns:**_
 What are the Top 10 marketing campaigns that bring the biggest revenue (based on billingCost of confirmed purchases)?
@@ -34,7 +34,7 @@ Implemented in Task2Job.scala as **topMarkCampGen**, **topMarkCampAltGen**(alter
 and **topSesChanGen**, **topSesChanAltGen** for task2.2. Use **_runTaskNum(_** taskNum: String **_)_** to run, 
 where taskNum = ["task21", "task21alt", "task22", "task22alt"]
 
-###Task #3.Organize data warehouse and calculate metrics for time period.
+### Task #3.Organize data warehouse and calculate metrics for time period.
 - **_Task #3.1._** Convert input dataset to parquet. Think about partitioning. Compare performance on top CSV input and parquet input. Save output for Task #1 as parquet as well.
 - **_Task #3.2._** Calculate metrics from Task #2 for different time periods:
   - For September 2020
