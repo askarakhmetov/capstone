@@ -1,5 +1,6 @@
 package capstone
 
+import com.typesafe.config.ConfigFactory
 import org.apache.spark.sql.functions.{col, to_timestamp}
 import org.apache.spark.sql.types.DoubleType
 import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
@@ -39,7 +40,7 @@ class Task1JobTest extends AnyFunSuite {
       col("isConfirmed").cast("boolean"))
   //(purchaseId: String, purchaseTime: Timestamp, billingCost: Double, isConfirmed: Boolean, sessionId: String, campaignId: String, channelId: String)
 
-  val taskJob = new Task1Job(spark)
+  val taskJob = new Task1Job(spark, ConfigFactory.load())
 
   test("testing runV1") {
     val res = taskJob.purchAttrProjGen(startUp, startMac)

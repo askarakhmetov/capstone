@@ -1,5 +1,6 @@
 package capstone
 
+import com.typesafe.config.ConfigFactory
 import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
 import org.junit.runner.RunWith
 import org.scalatest.funsuite.AnyFunSuite
@@ -17,7 +18,7 @@ class Task2JobTest extends AnyFunSuite {
       .master("local")
       .getOrCreate()
   import spark.implicits._
-  val taskJob = new Task2Job(spark)
+  val taskJob = new Task2Job(spark, ConfigFactory.load())
   val inData: Dataset[PurchAttrProj] = spark.createDataset(
     Seq(PurchAttrProj("e9bb17bc", Timestamp.valueOf("2020-11-01 16:56:07"), 481.8, isConfirmed = true, "f6e8252f", "332", "Facebook Ads"),
       PurchAttrProj("sdzfbc", Timestamp.valueOf("2020-11-01 16:56:07"), 0.0, isConfirmed = true, "f6e8252f", "332", "Facebook Ads"),
